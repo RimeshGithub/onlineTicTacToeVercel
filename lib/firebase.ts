@@ -4,6 +4,7 @@ import { getDatabase } from "firebase/database"
 const firebaseConfig = {
   apiKey: "AIzaSyCnf5ZfNajCiZo4xJ2osVN2-GJNyThif-M",
   authDomain: "nonsenseproject2061.firebaseapp.com",
+  databaseURL: "https://nonsenseproject2061-default-rtdb.firebaseio.com",
   projectId: "nonsenseproject2061",
   storageBucket: "nonsenseproject2061.firebasestorage.app",
   messagingSenderId: "155104953307",
