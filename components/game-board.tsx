@@ -64,7 +64,7 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
     <Card className="p-6 sm:p-8 bg-card/30 backdrop-blur border-border/50">
       {/* Game Board Grid */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-md mx-auto mb-8">
-        {gameState.board.map((cell, index) => (
+        {gameState?.board?.map((cell, index) => (
           <Button
             key={index}
             variant="ghost"
