@@ -3,20 +3,46 @@
 import type { GameState } from "@/types/game"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RotateCcw, Trophy, Handshake } from "lucide-react"
+import { RotateCcw, Trophy, Handshake, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface GameStatusProps {
   gameState: GameState
   playerSymbol: "X" | "O" | null
   onReset: () => void
+  hasRequestedPlayAgain?: boolean
+  otherPlayerRequestedPlayAgain?: boolean
 }
 
-export function GameStatus({ gameState, playerSymbol, onReset }: GameStatusProps) {
+export function GameStatus({
+  gameState,
+  playerSymbol,
+  onReset,
+  hasRequestedPlayAgain = false,
+  otherPlayerRequestedPlayAgain = false,
+}: GameStatusProps) {
   if (!gameState.isGameOver) return null
 
   const isWinner = gameState.winner === playerSymbol
   const isLoser = gameState.winner && gameState.winner !== playerSymbol
+
+  const getPlayAgainButton = () => {
+    if (hasRequestedPlayAgain) {
+      return (
+        <Button disabled variant="outline" className="mt-4 bg-transparent h-12 px-8 text-base font-semibold">
+          <Clock className="h-4 w-4 mr-2" />
+          Waiting for Other Player
+        </Button>
+      )
+    }
+
+    return (
+      <Button onClick={onReset} variant="outline" className="mt-4 bg-transparent h-12 px-8 text-base font-semibold">
+        <RotateCcw className="h-4 w-4 mr-2" />
+        Play Again
+      </Button>
+    )
+  }
 
   return (
     <Card
@@ -57,7 +83,7 @@ export function GameStatus({ gameState, playerSymbol, onReset }: GameStatusProps
           ) : isWinner ? (
             <>
               <h3 className="text-2xl sm:text-3xl font-bold text-primary">You Won!</h3>
-              <p className="text-base sm:text-lg text-muted-foreground">🎉 Congratulations on your victory!</p>
+              <p className="text-base sm:text-lg text-muted-foreground">Congratulations on your victory!</p>
             </>
           ) : (
             <>
@@ -67,11 +93,8 @@ export function GameStatus({ gameState, playerSymbol, onReset }: GameStatusProps
           )}
         </div>
 
-        {/* Reset Button */}
-        <Button onClick={onReset} variant="outline" className="mt-4 bg-transparent h-12 px-8 text-base font-semibold">
-          <RotateCcw className="h-4 w-4 mr-2" />
-          Play Again
-        </Button>
+        {/* Play Again Button */}
+        {getPlayAgainButton()}
       </div>
     </Card>
   )

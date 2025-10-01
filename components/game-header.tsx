@@ -3,7 +3,7 @@
 import type { GameState } from "@/types/game"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users, Crown, User } from "lucide-react"
+import { Users, Crown, User, X, Circle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface GameHeaderProps {
@@ -25,10 +25,10 @@ export function GameHeader({ gameState, playerSymbol, playerName }: GameHeaderPr
             className={cn(
               "w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center font-bold text-xl sm:text-2xl",
               "bg-primary/10 text-primary border-2 transition-all duration-300",
-              playerSymbol === "X" ? "border-primary shadow-lg shadow-primary/20" : "border-primary/30",
+              gameState.currentPlayer === "X" ? "border-primary shadow-lg shadow-primary/20" : "border-primary/30",
             )}
           >
-            X
+            <X />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -64,11 +64,11 @@ export function GameHeader({ gameState, playerSymbol, playerName }: GameHeaderPr
           <div
             className={cn(
               "w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center font-bold text-xl sm:text-2xl",
-              "bg-accent/10 text-accent border-2 transition-all duration-300",
-              playerSymbol === "O" ? "border-accent shadow-lg shadow-accent/20" : "border-accent/30",
+              "bg-primary/10 text-primary border-2 transition-all duration-300",
+              gameState.currentPlayer === "O" ? "border-primary shadow-lg shadow-primary/20" : "border-primary/30",
             )}
           >
-            O
+            <Circle />
           </div>
           <div className="text-right min-w-0">
             <div className="flex items-center gap-2 mb-1 justify-end">

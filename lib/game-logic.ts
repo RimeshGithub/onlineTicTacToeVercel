@@ -1,5 +1,5 @@
 export type Player = "X" | "O"
-export type Board = (Player | null)[]
+export type Board = string[]
 
 export interface WinResult {
   winner: Player | null
@@ -35,8 +35,7 @@ export function checkWinner(board: Board): WinResult {
     }
   }
 
-  // Check for draw (board is full with no winner)
-  const isDraw = board.every((cell) => cell !== null)
+  const isDraw = board.every((cell) => cell !== "")
 
   return {
     winner: null,
@@ -57,7 +56,7 @@ export function isWinningPosition(position: number, board: Board): boolean {
  * Get all empty positions on the board
  */
 export function getEmptyPositions(board: Board): number[] {
-  return board.map((cell, index) => (cell === null ? index : -1)).filter((index) => index !== -1)
+  return board.map((cell, index) => (cell === "" ? index : -1)).filter((index) => index !== -1)
 }
 
 /**
@@ -67,8 +66,7 @@ export function isValidMove(board: Board, position: number, currentPlayer: Playe
   // Check if position is within bounds
   if (position < 0 || position > 8) return false
 
-  // Check if position is empty
-  if (board[position] !== null) return false
+  if (board[position] !== "") return false
 
   // Check if it's the player's turn
   if (currentPlayer !== playerSymbol) return false
@@ -80,7 +78,7 @@ export function isValidMove(board: Board, position: number, currentPlayer: Playe
  * Make a move and return the new game state
  */
 export function makeMove(board: Board, position: number, player: Player): Board {
-  if (board[position] !== null) {
+  if (board[position] !== "") {
     throw new Error("Position already occupied")
   }
 
@@ -102,7 +100,7 @@ export function getNextPlayer(currentPlayer: Player): Player {
 export function getGameStats(board: Board) {
   const xCount = board.filter((cell) => cell === "X").length
   const oCount = board.filter((cell) => cell === "O").length
-  const emptyCount = board.filter((cell) => cell === null).length
+  const emptyCount = board.filter((cell) => cell === "").length
 
   return {
     xCount,

@@ -1,6 +1,8 @@
+export type GameMode = "online" | "custom"
+
 export interface GameState {
   id: string
-  board: (string | null)[]
+  board: string[]
   currentPlayer: "X" | "O"
   players: {
     X: string | null
@@ -11,10 +13,40 @@ export interface GameState {
   isGameOver: boolean
   createdAt: number
   lastMove: number
+  mode: GameMode
+  isPublic: boolean
+  roomName?: string
+  playerPresence: {
+    X: {
+      isOnline: boolean
+      lastSeen: number
+    }
+    O: {
+      isOnline: boolean
+      lastSeen: number
+    }
+  }
+  playAgainRequests: {
+    X: boolean
+    O: boolean
+  }
+  isTerminated: boolean
+  terminationReason?: string
 }
 
 export interface Player {
   id: string
   symbol: "X" | "O"
   name: string
+}
+
+export interface RoomInfo {
+  id: string
+  roomName: string
+  createdBy: string
+  playerCount: number
+  maxPlayers: number
+  createdAt: number
+  isActive: boolean
+  mode: GameMode
 }

@@ -1,17 +1,113 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { ref, onValue, set, off } from "firebase/database"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { ref, onValue, set, onDisconnect } from "firebase/database"
 import { database } from "@/lib/firebase"
 import { checkWinner, isValidMove, makeMove as makeMoveLogic, getNextPlayer } from "@/lib/game-logic"
-import type { GameState } from "@/types/game"
+import type { GameState, GameMode } from "@/types/game"
 
-export function useGame(gameId: string, playerName: string, isCreator = false) {
+export function useGame(gameId: string, playerName: string, isCreator = false, mode: GameMode = "custom") {
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [playerSymbol, setPlayerSymbol] = useState<"X" | "O" | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting")
+
+  const presenceIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const disconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const leaveGame = useCallback(async () => {
+    if (!gameState || !playerSymbol) return
+
+    const gameRef = ref(database, `games/${gameId}`)
+
+    try {
+      const updatedGame: GameState = {
+        ...gameState,
+        players: {
+          ...gameState.players,
+          [playerSymbol]: null,
+        },
+        playerPresence: {
+          ...gameState.playerPresence,
+          [playerSymbol]: {
+            isOnline: false,
+            lastSeen: Date.now(),
+          },
+        },
+        isTerminated: true,
+        terminationReason: `${gameState.players[playerSymbol]} left the game`,
+        lastMove: Date.now(),
+      }
+
+      await set(gameRef, updatedGame)
+
+      // Clear presence monitoring
+      if (presenceIntervalRef.current) {
+        clearInterval(presenceIntervalRef.current)
+      }
+    } catch (err) {
+      console.error("Failed to leave game:", err)
+      setError("Failed to leave game")
+    }
+  }, [gameState, playerSymbol, gameId])
+
+  const checkForDisconnectedPlayers = useCallback(async () => {
+    if (!gameState || gameState.isTerminated) return
+
+    const now = Date.now()
+    const disconnectThreshold = 30000 // 30 seconds
+
+    const playerXDisconnected =
+      gameState.players.X &&
+      !gameState.playerPresence.X.isOnline &&
+      now - gameState.playerPresence.X.lastSeen > disconnectThreshold
+
+    const playerODisconnected =
+      gameState.players.O &&
+      !gameState.playerPresence.O.isOnline &&
+      now - gameState.playerPresence.O.lastSeen > disconnectThreshold
+
+    if (playerXDisconnected || playerODisconnected) {
+      const disconnectedPlayer = playerXDisconnected ? gameState.players.X : gameState.players.O
+
+      const gameRef = ref(database, `games/${gameId}`)
+      const updatedGame: GameState = {
+        ...gameState,
+        isTerminated: true,
+        terminationReason: `${disconnectedPlayer} disconnected`,
+        lastMove: Date.now(),
+      }
+
+      try {
+        await set(gameRef, updatedGame)
+      } catch (err) {
+        console.error("Failed to terminate game:", err)
+      }
+    }
+  }, [gameState, gameId])
+
+  const updatePresence = useCallback(async () => {
+    if (!gameState || !playerSymbol || gameState.isTerminated) return
+
+    const gameRef = ref(database, `games/${gameId}`)
+    const updatedGame: GameState = {
+      ...gameState,
+      playerPresence: {
+        ...gameState.playerPresence,
+        [playerSymbol]: {
+          isOnline: true,
+          lastSeen: Date.now(),
+        },
+      },
+    }
+
+    try {
+      await set(gameRef, updatedGame)
+    } catch (err) {
+      console.error("Failed to update presence:", err)
+    }
+  }, [gameState, playerSymbol, gameId])
 
   // Initialize game
   const initializeGame = useCallback(async () => {
@@ -21,10 +117,9 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
 
     try {
       if (isCreator) {
-        // Create new game
         const newGame: GameState = {
           id: gameId,
-          board: Array(9).fill(null),
+          board: Array(9).fill(""),
           currentPlayer: "X",
           players: {
             X: playerName,
@@ -35,11 +130,34 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
           isGameOver: false,
           createdAt: Date.now(),
           lastMove: Date.now(),
+          mode: mode,
+          isPublic: mode === "online",
+          playerPresence: {
+            X: {
+              isOnline: true,
+              lastSeen: Date.now(),
+            },
+            O: {
+              isOnline: false,
+              lastSeen: 0,
+            },
+          },
+          playAgainRequests: {
+            X: false,
+            O: false,
+          },
+          isTerminated: false,
         }
 
         await set(gameRef, newGame)
         setPlayerSymbol("X")
         setConnectionStatus("connected")
+
+        const presenceRef = ref(database, `games/${gameId}/playerPresence/X`)
+        onDisconnect(presenceRef).set({
+          isOnline: false,
+          lastSeen: Date.now(),
+        })
       } else {
         // Join existing game
         const unsubscribe = onValue(
@@ -47,6 +165,24 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
           (snapshot) => {
             const game = snapshot.val()
             if (game) {
+              if (mode === "custom" && game.mode !== "custom") {
+                setError("Invalid game mode")
+                setConnectionStatus("disconnected")
+                return
+              }
+
+              if (mode === "online" && game.mode !== "online") {
+                setError("Invalid game mode")
+                setConnectionStatus("disconnected")
+                return
+              }
+
+              if (game.isTerminated) {
+                setError(game.terminationReason || "Game has been terminated")
+                setConnectionStatus("disconnected")
+                return
+              }
+
               if (!game.players.O) {
                 // Join as player O
                 const updatedGame = {
@@ -55,10 +191,23 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
                     ...game.players,
                     O: playerName,
                   },
+                  playerPresence: {
+                    ...game.playerPresence,
+                    O: {
+                      isOnline: true,
+                      lastSeen: Date.now(),
+                    },
+                  },
                 }
                 set(gameRef, updatedGame)
                 setPlayerSymbol("O")
                 setConnectionStatus("connected")
+
+                const presenceRef = ref(database, `games/${gameId}/playerPresence/O`)
+                onDisconnect(presenceRef).set({
+                  isOnline: false,
+                  lastSeen: Date.now(),
+                })
               } else if (game.players.X === playerName) {
                 setPlayerSymbol("X")
                 setConnectionStatus("connected")
@@ -83,7 +232,50 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
       setConnectionStatus("disconnected")
       console.error("Game initialization error:", err)
     }
-  }, [gameId, playerName, isCreator])
+  }, [gameId, playerName, isCreator, mode])
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (gameState && playerSymbol && !gameState.isTerminated) {
+        // Use navigator.sendBeacon for reliable cleanup on page unload
+        const gameRef = ref(database, `games/${gameId}/playerPresence/${playerSymbol}`)
+        navigator.sendBeacon(
+          `${process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL}/games/${gameId}/playerPresence/${playerSymbol}.json`,
+          JSON.stringify({
+            isOnline: false,
+            lastSeen: Date.now(),
+          }),
+        )
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [gameState, playerSymbol, gameId])
+
+  useEffect(() => {
+    if (gameState && playerSymbol && !gameState.isTerminated) {
+      // Update presence every 10 seconds
+      presenceIntervalRef.current = setInterval(updatePresence, 10000)
+
+      // Check for disconnected players every 15 seconds
+      disconnectTimeoutRef.current = setInterval(checkForDisconnectedPlayers, 15000)
+    }
+
+    return () => {
+      if (presenceIntervalRef.current) {
+        clearInterval(presenceIntervalRef.current)
+      }
+      if (disconnectTimeoutRef.current) {
+        clearInterval(disconnectTimeoutRef.current)
+      }
+    }
+  }, [gameState, playerSymbol, updatePresence, checkForDisconnectedPlayers])
+
+  // Initialize game on mount
+  useEffect(() => {
+    initializeGame()
+  }, [initializeGame])
 
   // Listen to game state changes with real-time synchronization
   useEffect(() => {
@@ -129,23 +321,34 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
     })
 
     return () => {
-      off(gameRef, "value", unsubscribe)
-      off(connectedRef, "value", connectionUnsubscribe)
+      unsubscribe()
+      connectionUnsubscribe()
     }
   }, [gameId, isCreator, error, gameState])
 
-  // Initialize game on mount
-  useEffect(() => {
-    initializeGame()
-  }, [initializeGame])
-
   const makeMove = useCallback(
     async (position: number) => {
-      if (!gameState || !playerSymbol) return false
+      console.log("[v0] makeMove called:", {
+        position,
+        gameState: gameState ? "exists" : "null",
+        playerSymbol,
+        currentPlayer: gameState?.currentPlayer,
+        isGameOver: gameState?.isGameOver,
+      })
+
+      if (!gameState || !playerSymbol) {
+        console.log("[v0] No game state or player symbol")
+        return false
+      }
 
       // Validate move using game logic
       if (!isValidMove(gameState.board, position, gameState.currentPlayer, playerSymbol)) {
-        console.log("[v0] Invalid move attempted:", { position, currentPlayer: gameState.currentPlayer, playerSymbol })
+        console.log("[v0] Invalid move attempted:", {
+          position,
+          currentPlayer: gameState.currentPlayer,
+          playerSymbol,
+          cellValue: gameState.board[position],
+        })
         return false
       }
 
@@ -157,11 +360,15 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
       const gameRef = ref(database, `games/${gameId}`)
 
       try {
+        console.log("[v0] Making move with game logic...")
+
         // Make the move using game logic
         const newBoard = makeMoveLogic(gameState.board, position, playerSymbol)
+        console.log("[v0] New board:", newBoard)
 
         // Check game result using enhanced logic
         const gameResult = checkWinner(newBoard)
+        console.log("[v0] Game result:", gameResult)
 
         const updatedGame: GameState = {
           ...gameState,
@@ -173,15 +380,17 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
           lastMove: Date.now(),
         }
 
+        console.log("[v0] Updated game state:", updatedGame)
+
         // Optimistic update
         setGameState(updatedGame)
 
         // Sync to Firebase
         await set(gameRef, updatedGame)
-        console.log("[v0] Move synchronized successfully with game logic validation")
+        console.log("[v0] Move synchronized successfully with Firebase")
         return true
       } catch (err) {
-        console.error("Move synchronization error:", err)
+        console.error("[v0] Move synchronization error:", err)
         // Revert optimistic update
         setGameState(gameState)
         setError("Failed to sync move")
@@ -197,12 +406,18 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
     const gameRef = ref(database, `games/${gameId}`)
     const resetGame: GameState = {
       ...gameState,
-      board: Array(9).fill(null),
+      board: Array(9).fill(""),
       currentPlayer: "X", // Always start with X
       winner: null,
       isDraw: false,
       isGameOver: false,
       lastMove: Date.now(),
+      playAgainRequests: {
+        X: false,
+        O: false,
+      },
+      isTerminated: false,
+      terminationReason: undefined,
     }
 
     try {
@@ -214,6 +429,55 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
     }
   }, [gameState, gameId])
 
+  const requestPlayAgain = useCallback(async () => {
+    if (!gameState || !playerSymbol) return
+
+    const gameRef = ref(database, `games/${gameId}`)
+    const updatedRequests = {
+      ...gameState.playAgainRequests,
+      [playerSymbol]: true,
+    }
+
+    try {
+      // If both players have requested play again, reset the game
+      if (updatedRequests.X && updatedRequests.O) {
+        await resetGame()
+      } else {
+        // Otherwise, just update the play again request
+        const updatedGame: GameState = {
+          ...gameState,
+          playAgainRequests: updatedRequests,
+          lastMove: Date.now(),
+        }
+        await set(gameRef, updatedGame)
+      }
+    } catch (err) {
+      console.error("Failed to request play again:", err)
+      setError("Failed to request play again")
+    }
+  }, [gameState, playerSymbol, gameId, resetGame])
+
+  const cancelPlayAgain = useCallback(async () => {
+    if (!gameState || !playerSymbol) return
+
+    const gameRef = ref(database, `games/${gameId}`)
+    const updatedGame: GameState = {
+      ...gameState,
+      playAgainRequests: {
+        ...gameState.playAgainRequests,
+        [playerSymbol]: false,
+      },
+      lastMove: Date.now(),
+    }
+
+    try {
+      await set(gameRef, updatedGame)
+    } catch (err) {
+      console.error("Failed to cancel play again:", err)
+      setError("Failed to cancel play again")
+    }
+  }, [gameState, playerSymbol, gameId])
+
   return {
     gameState,
     playerSymbol,
@@ -222,5 +486,8 @@ export function useGame(gameId: string, playerName: string, isCreator = false) {
     connectionStatus,
     makeMove,
     resetGame,
+    leaveGame,
+    requestPlayAgain, // Added requestPlayAgain to return object
+    cancelPlayAgain, // Added cancelPlayAgain to return object
   }
 }
