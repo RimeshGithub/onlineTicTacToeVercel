@@ -20,7 +20,7 @@ export function GameHeader({ gameState, playerSymbol, playerName }: GameHeaderPr
     <Card className="p-4 sm:p-6 mb-8 bg-card/50 backdrop-blur border-border/50">
       <div className="flex items-center justify-between">
         {/* Player X */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-row">
           <div
             className={cn(
               "w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center font-bold text-xl sm:text-2xl",
@@ -30,19 +30,24 @@ export function GameHeader({ gameState, playerSymbol, playerName }: GameHeaderPr
           >
             <X />
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="text-right min-w-0">
+            <div className="flex items-center gap-2 mb-1 justify-end">
               <p className="font-semibold text-sm sm:text-base truncate max-w-24 sm:max-w-none">
-                {gameState.players.X}
+                {gameState.players.X || (
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    <span className="hidden sm:inline">Waiting...</span>
+                  </span>
+                )}
               </p>
-              {playerSymbol === "X" && (
+              {playerSymbol === "X" && gameState.players.X && (
                 <Badge variant="secondary" className="text-xs px-2 py-0.5">
                   You
                 </Badge>
               )}
             </div>
             {gameState.winner === "X" && (
-              <div className="flex items-center gap-1 text-xs text-primary">
+              <div className="flex items-center gap-1 text-xs text-primary justify-end">
                 <Crown className="h-3 w-3" />
                 Winner
               </div>
@@ -87,7 +92,7 @@ export function GameHeader({ gameState, playerSymbol, playerName }: GameHeaderPr
               </p>
             </div>
             {gameState.winner === "O" && (
-              <div className="flex items-center gap-1 text-xs text-accent justify-end">
+              <div className="flex items-center gap-1 text-xs text-primary justify-end">
                 <Crown className="h-3 w-3" />
                 Winner
               </div>

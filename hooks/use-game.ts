@@ -116,14 +116,15 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
     const gameRef = ref(database, `games/${gameId}`)
 
     try {
+      const randomTurn = Math.random() < 0.5 ? "X" : "O"
       if (isCreator) {
         const newGame: GameState = {
           id: gameId,
           board: Array(9).fill(""),
-          currentPlayer: "X",
+          currentPlayer: Math.random() < 0.5 ? "X" : "O",
           players: {
-            X: playerName,
-            O: null,
+            X: randomTurn === "X" ? playerName : null,
+            O: randomTurn === "O" ? playerName : null,
           },
           winner: null,
           isDraw: false,
@@ -134,12 +135,12 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
           isPublic: mode === "online",
           playerPresence: {
             X: {
-              isOnline: true,
-              lastSeen: Date.now(),
+              isOnline: randomTurn === "X",
+              lastSeen: randomTurn === "X" ? Date.now() : 0,
             },
             O: {
-              isOnline: false,
-              lastSeen: 0,
+              isOnline: randomTurn === "O",
+              lastSeen: randomTurn === "O" ? Date.now() : 0,
             },
           },
           playAgainRequests: {
@@ -150,7 +151,7 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
         }
 
         await set(gameRef, newGame)
-        setPlayerSymbol("X")
+        setPlayerSymbol(randomTurn)
         setConnectionStatus("connected")
 
         const presenceRef = ref(database, `games/${gameId}/playerPresence/X`)
@@ -204,6 +205,31 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
                 setConnectionStatus("connected")
 
                 const presenceRef = ref(database, `games/${gameId}/playerPresence/O`)
+                onDisconnect(presenceRef).set({
+                  isOnline: false,
+                  lastSeen: Date.now(),
+                })
+              } else if (!game.players.X) {
+                // Join as player X
+                const updatedGame = {
+                  ...game,
+                  players: {
+                    ...game.players,
+                    X: playerName,
+                  },
+                  playerPresence: {
+                    ...game.playerPresence,
+                    X: {
+                      isOnline: true,
+                      lastSeen: Date.now(),
+                    },
+                  },
+                }
+                set(gameRef, updatedGame)
+                setPlayerSymbol("X")
+                setConnectionStatus("connected")
+
+                const presenceRef = ref(database, `games/${gameId}/playerPresence/X`)
                 onDisconnect(presenceRef).set({
                   isOnline: false,
                   lastSeen: Date.now(),
@@ -407,17 +433,29 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
     const resetGame: GameState = {
       ...gameState,
       board: Array(9).fill(""),
-      currentPlayer: "X", // Always start with X
+      currentPlayer: Math.random() < 0.5 ? "X" : "O",
       winner: null,
       isDraw: false,
       isGameOver: false,
+      createdAt: Date.now(),
       lastMove: Date.now(),
+      mode: mode,
+      isPublic: mode === "online",
+      playerPresence: {
+        X: {
+          isOnline: true,
+          lastSeen: Date.now(),
+        },
+        O: {
+          isOnline: false,
+          lastSeen: 0,
+        },
+      },
       playAgainRequests: {
         X: false,
         O: false,
       },
-      isTerminated: false,
-      terminationReason: undefined,
+      isTerminated: false, 
     }
 
     try {
@@ -478,6 +516,27 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
     }
   }, [gameState, playerSymbol, gameId])
 
+  const declinePlayAgain = useCallback(async () => {
+    if (!gameState || !playerSymbol) return
+
+    const gameRef = ref(database, `games/${gameId}`)
+    const updatedGame: GameState = {
+      ...gameState,
+      playAgainRequests: {
+        ...gameState.playAgainRequests,
+        [playerSymbol === "X" ? "O" : "X"]: false,
+      },
+      lastMove: Date.now(),
+    }
+
+    try {
+      await set(gameRef, updatedGame)
+    } catch (err) {
+      console.error("Failed to cancel play again:", err)
+      setError("Failed to cancel play again")
+    }
+  }, [gameState, playerSymbol, gameId])
+
   return {
     gameState,
     playerSymbol,
@@ -489,5 +548,6 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
     leaveGame,
     requestPlayAgain, // Added requestPlayAgain to return object
     cancelPlayAgain, // Added cancelPlayAgain to return object
+    declinePlayAgain,
   }
 }

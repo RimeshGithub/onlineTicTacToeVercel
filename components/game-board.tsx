@@ -66,20 +66,20 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
 
     return cn(
       "aspect-square flex items-center justify-center font-bold transition-all duration-300",
-      "bg-card/50 backdrop-blur border border-border/200 rounded-2xl",
+      "bg-card/50 backdrop-blur border rounded-2xl",
       "h-20",
-      "hover:bg-card/70 active:scale-95",
       {
         // Interaction states
         "cursor-pointer hover:scale-105 hover:shadow-lg": isClickable,
-        "cursor-not-allowed": !canPlay,
+
+        "hover:bg-card/70 active:scale-95": !isWinning,
 
         // Winning highlights with enhanced styling
         "bg-primary/20 border-primary/50 shadow-xl shadow-primary/20 scale-105": isWinning,
 
         // Game state styling
-        "opacity-50": !canPlay && !gameState.isGameOver && !isEmpty,
-        "animate-pulse border-primary/30": isClickable && isPlayerTurn,
+        "opacity-70": !canPlay && !gameState.isGameOver && !isEmpty,
+        "animate-pulse border-primary/50": isClickable && isPlayerTurn,
       },
     )
   }
@@ -87,11 +87,10 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
   return (
     <Card className="p-6 sm:p-8 bg-card/30 backdrop-blur border-border/50 gap-1">
       {/* Game Board Grid */}
-      <div className="grid grid-cols-3 gap-1 sm:gap-2 md:gap-3 mx-auto mb-4">
+      <div className="grid grid-cols-3 gap-2 md:gap-3 mx-auto mb-4">
         {gameState.board.map((cell, index) => (
-          <Button
+          <button
             key={index}
-            variant="ghost"
             className={getCellStyle(cell, index)}
             onClick={() => {
               console.log("[v0] Button clicked for position:", index)
@@ -100,7 +99,7 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
             disabled={!canPlay || cell !== ""}
           >
             {cell === "X" ? <X className="!w-14 !h-14" /> : cell === "O" ? <Circle className="!w-14 !h-14" /> : ""}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -109,11 +108,9 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
         {gameState.isGameOver ? (
           <div className="space-y-3">
             {gameState.winner ? (
-              <div>
-                <p className="text-xl sm:text-2xl font-bold mb-2">
-                  <span className={cn("font-bold", "text-primary")}>
-                    Player {gameState.winner}
-                  </span>{" "}
+              <div className="flex flex-col items-center">
+                <p className="text-xl sm:text-2xl font-bold mb-2 flex items-center gap-2">
+                  Player {gameState.winner === "X" ? <X className="w-10 h-10" /> : <Circle className="w-10 h-10" />}
                   wins!
                 </p>
                 <p className="text-sm sm:text-base text-muted-foreground">
@@ -129,10 +126,10 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-base sm:text-lg text-muted-foreground">
+            <p className="text-base sm:text-lg text-muted-foreground flex justify-center gap-2">
               Current turn:{" "}
-              <span className={cn("font-bold", "text-primary")}>
-                Player {gameState.currentPlayer}
+              <span className={cn("font-bold", "text-primary", "flex items-center gap-1")}>
+                Player {gameState.currentPlayer === "X" ? <X className="w-7 h-7" /> : <Circle className="w-5 h-5" />}
               </span>
             </p>
             {canPlay ? (

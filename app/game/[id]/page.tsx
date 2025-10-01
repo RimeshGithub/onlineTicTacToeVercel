@@ -39,6 +39,7 @@ export default function GamePage() {
     leaveGame,
     requestPlayAgain,
     cancelPlayAgain,
+    declinePlayAgain
   } = useGame(gameId, playerName, isCreator, mode)
 
   const copyGameCode = async () => {
@@ -120,9 +121,9 @@ export default function GamePage() {
     )
   }
 
-  const waitingForPlayer = !gameState.players.O
   const otherPlayerSymbol = playerSymbol === "X" ? "O" : "X"
-  const otherPlayerName = gameState.players[otherPlayerSymbol]
+  const waitingForPlayer = otherPlayerSymbol === "X" ? !gameState.players?.X : !gameState.players?.O
+  const otherPlayerName = otherPlayerSymbol && gameState.players[otherPlayerSymbol]
   const hasRequestedPlayAgain = gameState.playAgainRequests[playerSymbol!]
   const otherPlayerRequestedPlayAgain = gameState.playAgainRequests[otherPlayerSymbol]
 
@@ -290,7 +291,7 @@ export default function GamePage() {
                       <Button onClick={requestPlayAgain} className="h-10">
                         Accept
                       </Button>
-                      <Button onClick={() => {}} variant="outline" className="h-10">
+                      <Button onClick={declinePlayAgain} variant="outline" className="h-10">
                         Decline
                       </Button>
                     </div>

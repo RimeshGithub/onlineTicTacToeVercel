@@ -31,7 +31,7 @@ export function GameStatus({
       return (
         <Button disabled variant="outline" className="mt-4 bg-transparent h-12 px-8 text-base font-semibold">
           <Clock className="h-4 w-4 mr-2" />
-          Waiting for Other Player
+          Waiting for Other Player...
         </Button>
       )
     }
