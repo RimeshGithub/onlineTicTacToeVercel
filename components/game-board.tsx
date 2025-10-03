@@ -85,7 +85,7 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
   }
 
   return (
-    <Card className="p-6 sm:p-8 bg-card/30 backdrop-blur border-border/50 gap-1">
+    <Card className="p-6 sm:p-8 bg-card/30 backdrop-blur border-border/50 gap-1 -mt-5">
       {/* Game Board Grid */}
       <div className="grid grid-cols-3 gap-2 md:gap-3 mx-auto mb-4">
         {gameState.board.map((cell, index) => (
