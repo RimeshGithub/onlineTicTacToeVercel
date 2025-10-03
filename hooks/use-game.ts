@@ -38,6 +38,7 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
         isTerminated: true,
         terminationReason: `${gameState.players[playerSymbol]} left the game`,
         lastMove: Date.now(),
+        quitter: playerSymbol,
       }
 
       await set(gameRef, updatedGame)
@@ -148,17 +149,18 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
             O: false,
           },
           isTerminated: false,
+          quitter: "",
         }
 
         await set(gameRef, newGame)
         setPlayerSymbol(randomTurn)
         setConnectionStatus("connected")
 
-        const presenceRef = ref(database, `games/${gameId}/playerPresence/X`)
-        onDisconnect(presenceRef).set({
-          isOnline: false,
-          lastSeen: Date.now(),
-        })
+        // const presenceRef = ref(database, `games/${gameId}/playerPresence/X`)
+        // onDisconnect(presenceRef).set({
+        //   isOnline: false,
+        //   lastSeen: Date.now(),
+        // })
       } else {
         // Join existing game
         const unsubscribe = onValue(
@@ -204,11 +206,11 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
                 setPlayerSymbol("O")
                 setConnectionStatus("connected")
 
-                const presenceRef = ref(database, `games/${gameId}/playerPresence/O`)
-                onDisconnect(presenceRef).set({
-                  isOnline: false,
-                  lastSeen: Date.now(),
-                })
+                // const presenceRef = ref(database, `games/${gameId}/playerPresence/O`)
+                // onDisconnect(presenceRef).set({
+                //   isOnline: false,
+                //   lastSeen: Date.now(),
+                // })
               } else if (!game.players.X) {
                 // Join as player X
                 const updatedGame = {
@@ -228,12 +230,12 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
                 set(gameRef, updatedGame)
                 setPlayerSymbol("X")
                 setConnectionStatus("connected")
-
-                const presenceRef = ref(database, `games/${gameId}/playerPresence/X`)
-                onDisconnect(presenceRef).set({
-                  isOnline: false,
-                  lastSeen: Date.now(),
-                })
+                
+                // const presenceRef = ref(database, `games/${gameId}/playerPresence/X`)
+                // onDisconnect(presenceRef).set({
+                //   isOnline: false,
+                //   lastSeen: Date.now(),
+                // })
               } else if (game.players.X === playerName) {
                 setPlayerSymbol("X")
                 setConnectionStatus("connected")
@@ -399,7 +401,7 @@ export function useGame(gameId: string, playerName: string, isCreator = false, m
         const updatedGame: GameState = {
           ...gameState,
           board: newBoard,
-          currentPlayer: getNextPlayer(playerSymbol),
+          currentPlayer: getNextPlayer(playerSymbol, newBoard),
           winner: gameResult.winner,
           isDraw: gameResult.isDraw,
           isGameOver: gameResult.winner !== null || gameResult.isDraw,

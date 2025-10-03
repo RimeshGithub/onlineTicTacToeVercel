@@ -77,7 +77,7 @@ export function GameStatus({
         <div className="space-y-2">
           {gameState.isDraw ? (
             <>
-              <h3 className="text-2xl sm:text-3xl font-bold text-muted-foreground">It's a Draw!</h3>
+              <h3 className="text-2xl sm:text-3xl font-bold text-primary">It's a Draw!</h3>
               <p className="text-base sm:text-lg text-muted-foreground">Great game! Both players played well.</p>
             </>
           ) : isWinner ? (

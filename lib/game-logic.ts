@@ -90,7 +90,8 @@ export function makeMove(board: Board, position: number, player: Player): Board 
 /**
  * Get the next player
  */
-export function getNextPlayer(currentPlayer: Player): Player {
+export function getNextPlayer(currentPlayer: Player, board: Board): Player {
+  if (checkWinner(board).winner !== null || checkWinner(board).isDraw) return currentPlayer
   return currentPlayer === "X" ? "O" : "X"
 }
 

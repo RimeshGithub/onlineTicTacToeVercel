@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Copy, Check, Share2, Globe, Lock, LogOut, AlertTriangle } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { GameMode } from "@/types/game"
 import { database } from "@/lib/firebase"
 import { ref, remove } from "firebase/database"
@@ -212,7 +212,7 @@ export default function GamePage() {
               <Card className="p-8 text-center max-w-md w-full bg-card/50 backdrop-blur border-border/50">
                 <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-4 text-destructive">Game Terminated</h2>
-                <p className="text-muted-foreground mb-8 text-lg">{gameState.terminationReason}</p>
+                <p className="text-muted-foreground mb-8 text-lg">{gameState.quitter === playerSymbol ? "You left the game!" : "Your opponent left the game!"}</p>
                 <Button onClick={() => router.push("/")} variant="outline" className="w-full h-12">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Home

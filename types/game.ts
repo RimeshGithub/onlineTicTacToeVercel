@@ -32,6 +32,7 @@ export interface GameState {
   }
   isTerminated: boolean
   terminationReason?: string
+  quitter?: "X" | "O" | ""
 }
 
 export interface Player {

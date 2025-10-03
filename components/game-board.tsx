@@ -119,7 +119,7 @@ export function GameBoard({ gameState, playerSymbol, onMove }: GameBoardProps) {
               </div>
             ) : gameState.isDraw ? (
               <div>
-                <p className="text-xl sm:text-2xl font-bold text-muted-foreground mb-2">It's a draw!</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary mb-2">It's a draw!</p>
                 <p className="text-sm sm:text-base text-muted-foreground">Great game! Both players played well.</p>
               </div>
             ) : null}

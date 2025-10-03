@@ -19,6 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <link rel="manifest" href="/manifest.webmanifest" />
+      <link rel="icon" href="/icons/favicon.ico" />
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={null}>{children}</Suspense>
         <Analytics />
