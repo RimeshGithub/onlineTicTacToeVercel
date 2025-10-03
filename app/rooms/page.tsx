@@ -74,7 +74,9 @@ function RoomsPageContent() {
 
   const refreshRooms = () => {
     setIsRefreshing(true)
-    // The useEffect will handle the refresh automatically
+    setTimeout(() => {
+      setIsRefreshing(false)
+    }, 1500)
   }
 
   const goBack = () => {
