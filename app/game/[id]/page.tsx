@@ -266,7 +266,7 @@ export default function GamePage() {
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Game
                 </Button>
-                <Button onClick={handleLeaveGame} variant="destructive" className="h-12" disabled={!waitingForPlayer.O}>
+                <Button onClick={handleLeaveGame} variant="destructive" className="h-12" disabled={waitingForPlayer}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Leave Game
                 </Button>
