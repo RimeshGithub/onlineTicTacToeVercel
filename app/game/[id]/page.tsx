@@ -58,7 +58,7 @@ export default function GamePage() {
         await navigator.share({
           title: "Join my Tic Tac Toe game!",
           text: `Use code ${gameId} to join my game`,
-          url: window.location.href,
+          url: window.location.href.split("?")[0] + `?player=Player#${Math.floor(Math.random() * 10000)}&mode=${mode}`,
         })
       } catch (err) {
         copyGameCode()
