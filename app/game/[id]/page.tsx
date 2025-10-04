@@ -184,24 +184,28 @@ export default function GamePage() {
                     </>
                   )}
                 </Badge>
-
+                
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">Game Code:</span>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={copyGameCode}
-                      className="font-mono text-lg px-4 bg-transparent h-10"
-                    >
-                      {gameId}
-                      {copied ? <Check className="h-4 w-4 ml-2 text-green-500" /> : <Copy className="h-4 w-4 ml-2" />}
-                    </Button>
+                    {!gameState.isPublic && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">Game Code:</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyGameCode}
+                          className="font-mono text-lg px-4 bg-transparent h-10"
+                        >
+                          {gameId}
+                          {copied ? <Check className="h-4 w-4 ml-2 text-green-500" /> : <Copy className="h-4 w-4 ml-2" />}
+                        </Button>
+                      </div>
+                    )}
                     <Button variant="outline" size="sm" onClick={shareGame} className="h-10 px-3 bg-transparent">
                       <Share2 className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
+                </div>              
               </div>
             </div> 
           )}
@@ -233,30 +237,31 @@ export default function GamePage() {
               <p className="text-muted-foreground mb-6 text-lg leading-relaxed">
                 {gameState.mode === "online" ? (
                   <>
-                    Your room is public and visible in the room list. Players can join directly or use the game code{" "}
-                    <span className="font-mono font-bold text-primary">{gameId}</span>
+                    Your room is public and visible in the room list. Players can join directly.
                   </>
                 ) : (
                   <>
                     Share the game code <span className="font-mono font-bold text-primary">{gameId}</span> with a friend
-                    to start playing
+                    to start playing.
                   </>
                 )}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button onClick={copyGameCode} variant="outline" className="h-12 bg-transparent">
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2 text-green-500" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy Game Code
-                    </>
-                  )}
-                </Button>
+                {!gameState.isPublic && (
+                  <Button onClick={copyGameCode} variant="outline" className="h-12 bg-transparent">
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Game Code
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button onClick={shareGame} className="h-12">
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Game

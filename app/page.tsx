@@ -349,7 +349,7 @@ function CustomModeScreen({ onBack }: { onBack: () => void }) {
                 <CardDescription>Enter a 6-character code</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 max-sm:flex-col max-sm:items-start">
                   <label htmlFor="game-code" className="text-sm font-medium whitespace-nowrap">
                     Room Code:
                   </label>
@@ -360,7 +360,7 @@ function CustomModeScreen({ onBack }: { onBack: () => void }) {
                     autoComplete="off"
                     onChange={(e) => setGameCode(e.target.value.toUpperCase())}
                     maxLength={6}
-                    className="w-full bg-input/50 border border-border/50 rounded-lg px-4 py-1 font-mono text-center text-xl tracking-wider"
+                    className="w-full bg-input/50 border border-border/50 rounded-lg px-4 py-1 font-mono text-center text-lg sm:text-xl tracking-wider"
                   />
                 </div>
                 <Button

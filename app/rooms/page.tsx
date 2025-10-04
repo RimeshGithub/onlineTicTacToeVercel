@@ -199,7 +199,7 @@ function RoomsPageContent() {
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-2 text-sm">
                       <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>Created by: {room.players.X || "Unknown"}</span>
+                      <span>Created by: {room.players.X || room.players.O || "Unknown"}</span>
                     </div>
                     <Button
                       onClick={() => joinRoom(room.id)}
